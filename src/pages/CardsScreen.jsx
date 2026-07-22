@@ -42,7 +42,7 @@ export default function CardsScreen() {
 
   return (
     <div className="min-h-screen bg-slate-900 flex justify-center items-center p-0 sm:py-6 sm:px-4">
-      {/* Conteneur principal Responsive (style App mobile sur grands écrans) */}
+      {/* Conteneur principal Responsive */}
       <div className="w-full max-w-md min-h-screen sm:min-h-[840px] sm:h-[840px] bg-slate-50 flex flex-col relative sm:rounded-3xl sm:shadow-2xl overflow-hidden border-x border-slate-200 sm:border">
         
         {/* En-tête Vert Émeraude */}
@@ -68,7 +68,7 @@ export default function CardsScreen() {
           {/* Bouton Créer une carte */}
           <div className="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-emerald-100/80">
             <button 
-              onClick={() => alert("Création de carte...")}
+              onClick={() => navigate('/create-card')}
               className="w-full bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white font-medium text-xs sm:text-sm py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all"
             >
               <span>Créer une carte virtuelle</span>

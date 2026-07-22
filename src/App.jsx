@@ -13,6 +13,7 @@ import PinScreen from './pages/PinScreen';
 import Dashboard from './pages/Dashboard';
 import CardsScreen from './pages/CardsScreen';
 import CardDetailScreen from './pages/CardDetailScreen';
+import CreateCardScreen from './pages/CreateCardScreen';
 import NotificationsScreen from './pages/NotificationsScreen';
 import SettingsScreen from './pages/SettingsScreen';
 
@@ -27,7 +28,7 @@ export default function App() {
       setLoading(false);
     });
 
-    // 2. Écouter les changements d'état (Connexion, Déconnexion, Expire)
+    // 2. Écouter les changements d'état (Connexion, Déconnexion, Session expirée)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setLoading(false);
@@ -103,6 +104,10 @@ export default function App() {
             <Route 
               path="/cards" 
               element={isAuthenticated ? <CardsScreen /> : <Navigate to="/login" replace />} 
+            />
+            <Route 
+              path="/create-card" 
+              element={isAuthenticated ? <CreateCardScreen /> : <Navigate to="/login" replace />} 
             />
             <Route 
               path="/card-detail" 
