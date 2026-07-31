@@ -12,7 +12,8 @@ import {
   Headphones,
   Lock,
   UserPlus,
-  Loader2 
+  Loader2,
+  X 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -30,6 +31,13 @@ export default function Dashboard() {
   const [pinInput, setPinInput] = useState('');
   const [confirmPinInput, setConfirmPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+
+  // Gestion de la modale de Dépôt Mobile Money
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [operator, setOperator] = useState('Orange Money');
+  const [phone, setPhone] = useState('');
+  const [amountFcfa, setAmountFcfa] = useState('');
+  const [depositLoading, setDepositLoading] = useState(false);
 
   // Chargement du profil utilisateur connecté
   useEffect(() => {
@@ -127,10 +135,67 @@ export default function Dashboard() {
     }
   };
 
+  // Traitement du Dépôt sur Solde Principal
+  const handleDepositSubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(amountFcfa);
+
+    if (!amount || amount < 500) {
+      alert("Le montant minimum de dépôt est de 500 FCFA.");
+      return;
+    }
+
+    setDepositLoading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Utilisateur non connecté");
+
+      const newBalanceFcfa = balanceFcfa + amount;
+
+      // 1. Mettre à jour le solde FCFA dans le profil Supabase
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ balance_fcfa: newBalanceFcfa })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      // 2. Enregistrer la transaction dans l'historique
+      const { error: txError } = await supabase
+        .from('transactions')
+        .insert([
+          {
+            user_id: user.id,
+            type: 'ACCOUNT_DEPOSIT',
+            amount_fcfa: amount,
+            operator: operator,
+            phone: phone,
+            status: 'SUCCESS',
+            created_at: new Date().toISOString()
+          }
+        ]);
+
+      if (txError) throw txError;
+
+      // Mettre à jour l'état local
+      setProfile((prev) => ({ ...prev, balance_fcfa: newBalanceFcfa }));
+      setIsDepositModalOpen(false);
+      setAmountFcfa('');
+      setPhone('');
+
+      alert(`Dépôt réussi ! ${amount.toLocaleString()} FCFA ont été ajoutés à votre solde principal.`);
+    } catch (err) {
+      alert("Erreur lors du dépôt : " + err.message);
+    } finally {
+      setDepositLoading(false);
+    }
+  };
+
   const quickActions = [
     { label: 'Paiement', icon: CreditCard, action: () => alert('Action Paiement') },
     { label: 'Transfert', icon: ArrowLeftRight, action: () => alert('Action Transfert') },
-    { label: 'Dépôt', icon: ArrowDownCircle, action: () => alert('Action Dépôt') },
+    { label: 'Dépôt', icon: ArrowDownCircle, action: () => setIsDepositModalOpen(true) },
     { label: 'Boutique', icon: Store, action: () => alert('Action Boutique') },
     { label: 'Lien', icon: LinkIcon, action: () => alert('Action Lien') },
     { label: 'Carte virtuelle', icon: CreditCard, action: () => navigate('/cards') },
@@ -231,6 +296,86 @@ export default function Dashboard() {
       >
         <Headphones className="w-6 h-6" />
       </button>
+
+      {/* --- MODALE DÉPÔT MOBILE MONEY --- */}
+      {isDepositModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 space-y-4 shadow-2xl animate-in fade-in slide-in-from-bottom duration-200">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="text-base font-bold text-slate-800">Dépôt sur solde principal</h3>
+              <button onClick={() => setIsDepositModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleDepositSubmit} className="space-y-4">
+              {/* Opérateurs Mobile Money */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-2">Choisir l'opérateur</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Orange Money', 'Moov Money', 'Wave'].map((op) => (
+                    <button
+                      type="button"
+                      key={op}
+                      onClick={() => setOperator(op)}
+                      className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                        operator === op
+                          ? 'border-emerald-700 bg-emerald-50 text-emerald-950'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {op}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Numéro de Téléphone */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Numéro de téléphone</label>
+                <input
+                  type="tel"
+                  placeholder="ex: 70000000"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-700"
+                />
+              </div>
+
+              {/* Montant à déposer */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Montant du dépôt (FCFA)</label>
+                <input
+                  type="number"
+                  placeholder="ex: 5000"
+                  value={amountFcfa}
+                  onChange={(e) => setAmountFcfa(e.target.value)}
+                  min="500"
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-700"
+                />
+              </div>
+
+              {/* Bouton de confirmation */}
+              <button
+                type="submit"
+                disabled={depositLoading}
+                className="w-full py-3 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl text-sm transition-all shadow-md mt-2 flex justify-center items-center gap-2"
+              >
+                {depositLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Traitement du dépôt...</span>
+                  </>
+                ) : (
+                  <span>Confirmer le dépôt</span>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODALE PIN : Création ou Saisie */}
       {isPinModalOpen && (
