@@ -1,135 +1,93 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './supabaseClient';
-import { Loader2 } from 'lucide-react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { PinPromptProvider, ToastProvider } from './context/Overlays';
+import AppShell from './components/AppShell';
+import { FullScreenLoader } from './components/ui';
+import { isConfigured } from './lib/supabase';
 
-// Pages d'Authentification
-import WelcomeScreen from './pages/WelcomeScreen';
-import LoginScreen from './pages/LoginScreen';
-import RegisterScreen from './pages/RegisterScreen';
-import PinScreen from './pages/PinScreen';
+import Welcome from './pages/auth/Welcome';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
+import SetupPin from './pages/auth/SetupPin';
+import Lock from './pages/auth/Lock';
+import SetupError from './pages/auth/SetupError';
 
-// Pages Principales
-import Dashboard from './pages/Dashboard';
-import CardsScreen from './pages/CardsScreen';
-import CardDetailScreen from './pages/CardDetailScreen';
-import CreateCardScreen from './pages/CreateCardScreen';
-import NotificationsScreen from './pages/NotificationsScreen';
-import SettingsScreen from './pages/SettingsScreen';
+import Home from './pages/Home';
+import Cards from './pages/cards/Cards';
+import CreateCard from './pages/cards/CreateCard';
+import CardDetail from './pages/cards/CardDetail';
+import Deposit from './pages/wallet/Deposit';
+import Withdraw from './pages/wallet/Withdraw';
+import Transfer from './pages/wallet/Transfer';
+import Transactions from './pages/Transactions';
+import Notifications from './pages/Notifications';
+import Settings from './pages/account/Settings';
+import Profile from './pages/account/Profile';
+import ChangePin from './pages/account/ChangePin';
 
-export default function App() {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
+function AppRoutes() {
+  const { session, profile, profileError, loading, recovery, unlocked } = useAuth();
 
-  useEffect(() => {
-    // 1. Récupérer la session Supabase active au démarrage
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
+  if (!isConfigured) {
+    return <SetupError message="Les clés Supabase sont absentes du fichier .env.local." />;
+  }
+  if (loading) return <FullScreenLoader />;
 
-    // 2. Écouter les changements d'état (Connexion, Déconnexion, Session expirée)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-  };
-
-  // Écran de chargement pendant la vérification initiale
-  if (loading) {
+  if (!session) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-      </div>
+      <Routes>
+        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="*" element={<Navigate to="/welcome" replace />} />
+      </Routes>
     );
   }
 
-  const isAuthenticated = !!session;
+  if (recovery) return <ResetPassword />;
+  if (!profile) return <SetupError message={profileError} />;
+  if (!profile.has_pin) return <SetupPin />;
+  if (!unlocked) return <Lock />;
 
   return (
-    <Router>
-      <div className="min-h-screen bg-slate-900 text-slate-800 font-sans flex justify-center items-center p-0 md:p-4">
-        <div className="w-full max-w-md bg-white min-h-screen md:min-h-[844px] md:max-h-[844px] md:rounded-[40px] shadow-2xl overflow-hidden flex flex-col relative border border-slate-800">
-          <Routes>
-            {/* Redirection initiale */}
-            <Route 
-              path="/" 
-              element={<Navigate to={isAuthenticated ? "/dashboard" : "/welcome"} replace />} 
-            />
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route index element={<Home />} />
+        <Route path="/cards" element={<Cards />} />
+        <Route path="/transactions" element={<Transactions />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
+      <Route path="/cards/new" element={<CreateCard />} />
+      <Route path="/cards/:id" element={<CardDetail />} />
+      <Route path="/deposit" element={<Deposit />} />
+      <Route path="/withdraw" element={<Withdraw />} />
+      <Route path="/transfer" element={<Transfer />} />
+      <Route path="/notifications" element={<Notifications />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/security/pin" element={<ChangePin />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
 
-            {/* Écran de bienvenue */}
-            <Route 
-              path="/welcome" 
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <WelcomeScreen />
-              } 
-            />
-
-            {/* Connexion classique */}
-            <Route 
-              path="/login" 
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginScreen />
-              } 
-            />
-
-            {/* Inscription */}
-            <Route 
-              path="/register" 
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterScreen />
-              } 
-            />
-
-            {/* Connexion rapide par PIN */}
-            <Route 
-              path="/pin" 
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <PinScreen />
-              } 
-            />
-
-            {/* Routes Protégées */}
-            <Route 
-              path="/dashboard" 
-              element={isAuthenticated ? <Dashboard onLogout={handleLogout} /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/cards" 
-              element={isAuthenticated ? <CardsScreen /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/create-card" 
-              element={isAuthenticated ? <CreateCardScreen /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/card-detail" 
-              element={isAuthenticated ? <CardDetailScreen /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/notifications" 
-              element={isAuthenticated ? <NotificationsScreen /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/settings" 
-              element={isAuthenticated ? <SettingsScreen onLogout={handleLogout} /> : <Navigate to="/login" replace />} 
-            />
-
-            {/* Redirection par défaut */}
-            <Route 
-              path="*" 
-              element={<Navigate to={isAuthenticated ? "/dashboard" : "/welcome"} replace />} 
-            />
-          </Routes>
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <div className="h-[100dvh] w-full flex justify-center md:items-center md:bg-gradient-to-br md:from-slate-200 md:to-emerald-100">
+          {/* Cadre « téléphone » : plein écran sur mobile, centré sur ordinateur */}
+          <div className="relative w-full max-w-[430px] h-full md:h-[min(880px,94dvh)] bg-slate-50 flex flex-col overflow-hidden md:rounded-[40px] md:shadow-2xl md:ring-8 md:ring-slate-900">
+            <ToastProvider>
+              <PinPromptProvider>
+                <AppRoutes />
+              </PinPromptProvider>
+            </ToastProvider>
+          </div>
         </div>
-      </div>
-    </Router>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
