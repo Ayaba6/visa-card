@@ -6,6 +6,8 @@ import AppShell from './components/AppShell';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FullScreenLoader } from './components/ui';
 import { isConfigured } from './lib/supabase';
+import { useOnline } from './lib/pwa';
+import { WifiOff } from 'lucide-react';
 
 // Écrans d'entrée : chargés immédiatement (premier affichage le plus rapide possible)
 import Welcome from './pages/auth/Welcome';
@@ -94,6 +96,7 @@ function useIsDesktop() {
 function Root() {
   const { session, loading } = useAuth();
   const isDesktop = useIsDesktop();
+  const online = useOnline();
 
   // Visiteur non connecté sur ordinateur : présentation et formulaires en pleine largeur
   if (isConfigured && !loading && !session && isDesktop) {
@@ -119,6 +122,12 @@ function Root() {
     <div className="h-[100dvh] w-full flex justify-center md:items-center md:bg-gradient-to-br md:from-slate-200 md:to-emerald-100">
       {/* Cadre « téléphone » : plein écran sur mobile, centré sur ordinateur */}
       <div className="relative w-full max-w-[430px] h-full md:h-[min(880px,94dvh)] bg-slate-50 flex flex-col overflow-hidden md:rounded-[40px] md:shadow-2xl md:ring-8 md:ring-slate-900">
+        {!online && (
+          <div role="status" className="shrink-0 flex items-center justify-center gap-2 bg-slate-900 text-white text-xs font-medium py-2 px-4">
+            <WifiOff className="w-3.5 h-3.5" aria-hidden="true" />
+            Vous êtes hors ligne. Les soldes et opérations se mettront à jour au retour de la connexion.
+          </div>
+        )}
         <ToastProvider>
           <PinPromptProvider>
             <Suspense fallback={<FullScreenLoader />}>

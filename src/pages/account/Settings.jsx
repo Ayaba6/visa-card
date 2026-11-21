@@ -11,7 +11,10 @@ import {
   LogOut,
   ChevronRight,
   ShieldAlert,
+  Smartphone,
 } from 'lucide-react';
+import InstallSheet from '../../components/InstallSheet';
+import { useInstallPrompt } from '../../lib/pwa';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/Overlays';
 import { supabase } from '../../lib/supabase';
@@ -55,6 +58,7 @@ export default function Settings() {
   const toast = useToast();
   const { profile, user, setUnlocked, signOut } = useAuth();
   const [sheet, setSheet] = useState(null);
+  const { installed } = useInstallPrompt();
   const kyc = KYC[profile?.kyc_status] || KYC.UNVERIFIED;
 
   return (
@@ -80,6 +84,9 @@ export default function Settings() {
           <Item icon={UserRound} label="Informations personnelles" sub="Nom, téléphone" onClick={() => navigate('/profile')} />
           <Item icon={BadgeCheck} label="Vérification d'identité" sub={kyc.label} onClick={() => setSheet('kyc')} />
           <Item icon={Bell} label="Notifications" onClick={() => navigate('/notifications')} />
+          {!installed && (
+            <Item icon={Smartphone} label="Installer l'application" sub="Sur votre écran d'accueil" onClick={() => setSheet('install')} />
+          )}
         </Group>
 
         <Group title="Sécurité">
@@ -105,10 +112,11 @@ export default function Settings() {
           <Item icon={LogOut} label="Se déconnecter" danger onClick={signOut} />
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-6">Kodapay · version 2.0</p>
+        <p className="text-center text-xs text-slate-400 mt-6">Kodapay · version 2.1 · un service de Kodalink</p>
       </div>
 
       <PasswordSheet open={sheet === 'password'} onClose={() => setSheet(null)} />
+      <InstallSheet open={sheet === 'install'} onClose={() => setSheet(null)} />
 
       <Sheet open={sheet === 'kyc'} onClose={() => setSheet(null)} title="Vérification d'identité">
         <p className="text-sm text-slate-600">

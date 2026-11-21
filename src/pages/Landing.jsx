@@ -9,8 +9,10 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
+  Download,
 } from 'lucide-react';
 import CardVisual from '../components/CardVisual';
+import { useInstallPrompt } from '../lib/pwa';
 import { Logo } from './auth/AuthLayout';
 import { api } from '../lib/api';
 import { useLoad } from '../lib/useLoad';
@@ -91,6 +93,7 @@ function PriceRow({ label, value }) {
 /** Page de présentation affichée aux visiteurs sur ordinateur. */
 export default function Landing() {
   const { data: s } = useLoad(() => api.settings(), []);
+  const { installed, canPrompt, install } = useInstallPrompt();
 
   return (
     <div className="h-[100dvh] overflow-y-auto bg-white text-slate-900 scroll-smooth">
@@ -105,6 +108,14 @@ export default function Landing() {
             <a href="#faq" className="hover:text-emerald-700">FAQ</a>
           </nav>
           <div className="flex items-center gap-2">
+            {!installed && canPrompt && (
+              <button
+                onClick={install}
+                className="h-10 px-4 rounded-full text-sm font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Installer l’app
+              </button>
+            )}
             <Link to="/login" className="h-10 px-4 rounded-full text-sm font-semibold text-slate-700 hover:bg-slate-100 flex items-center">
               Se connecter
             </Link>

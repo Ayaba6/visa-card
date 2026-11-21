@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Smartphone, Globe2 } from 'lucide-react';
+import { ShieldCheck, Smartphone, Globe2, Download } from 'lucide-react';
 import { Button } from '../../components/ui';
 import CardVisual from '../../components/CardVisual';
+import InstallSheet from '../../components/InstallSheet';
+import { useInstallPrompt } from '../../lib/pwa';
 import { Logo } from './AuthLayout';
 
 const DEMO_CARDS = [
@@ -17,6 +20,8 @@ const FEATURES = [
 
 export default function Welcome() {
   const navigate = useNavigate();
+  const { installed, canPrompt, ios } = useInstallPrompt();
+  const [installOpen, setInstallOpen] = useState(false);
   return (
     <div className="flex-1 overflow-y-auto bg-emerald-950 text-white">
       <div className="min-h-full flex flex-col px-6 pt-8 pb-8">
@@ -52,8 +57,17 @@ export default function Welcome() {
           <Button variant="ghost" className="w-full !text-white hover:!bg-white/10" onClick={() => navigate('/login')}>
             J'ai déjà un compte
           </Button>
+          {!installed && (canPrompt || ios) && (
+            <button
+              onClick={() => setInstallOpen(true)}
+              className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-emerald-300 hover:text-emerald-200 pt-1"
+            >
+              <Download className="w-4 h-4" /> Installer l'application
+            </button>
+          )}
         </div>
       </div>
+      <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
     </div>
   );
 }

@@ -2,10 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, ShieldCheck } from 'lucide-react';
 import CardVisual from '../../components/CardVisual';
 
-export function Logo({ light = false, size = 'text-2xl' }) {
+/** Logo Kodapay : symbole + nom. La taille suit la classe de texte (`size`). */
+export function Logo({ light = false, size = 'text-2xl', mark = true }) {
   return (
-    <span className={`font-extrabold tracking-tight ${size} ${light ? 'text-white' : 'text-emerald-950'}`}>
-      koda<span className={light ? 'text-emerald-300' : 'text-emerald-500'}>pay</span>
+    <span className={`inline-flex items-center gap-[0.35em] font-extrabold tracking-tight leading-none ${size} ${light ? 'text-white' : 'text-emerald-950'}`}>
+      {mark && <img src="/logo.svg" alt="" aria-hidden="true" className="w-[1.25em] h-[1.25em] rounded-[0.32em] shadow-sm" />}
+      <span>
+        koda<span className={light ? 'text-emerald-300' : 'text-emerald-500'}>pay</span>
+      </span>
     </span>
   );
 }
