@@ -4,8 +4,8 @@ import { Mail, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/Overlays';
 import { api } from '../../lib/api';
-import { digitsOnly } from '../../lib/format';
-import { Button, Field, Notice } from '../../components/ui';
+import { localPhone } from '../../lib/format';
+import { Button, Field, Notice, PhoneField } from '../../components/ui';
 import { FormPage } from '../wallet/shared';
 
 export default function Profile() {
@@ -13,7 +13,7 @@ export default function Profile() {
   const toast = useToast();
   const { profile, user, refreshProfile } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [phone, setPhone] = useState(digitsOnly(profile?.phone).slice(-8));
+  const [phone, setPhone] = useState(localPhone(profile?.phone));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,13 +44,11 @@ export default function Profile() {
     >
       <div className="space-y-4 pt-2">
         <Field label="Nom complet" icon={User} value={fullName} onChange={(e) => setFullName(e.target.value)} />
-        <Field
+        <PhoneField
           label="Numéro de téléphone"
           hint="Vos contacts Kodapay vous envoient de l'argent avec ce numéro."
-          inputMode="numeric"
           value={phone}
-          onChange={(e) => setPhone(digitsOnly(e.target.value).slice(0, 8))}
-          icon={() => <span className="text-sm font-semibold text-slate-500">🇧🇫 +226</span>}
+          onChange={setPhone}
         />
         <Field label="Email" icon={Mail} value={user?.email || ''} disabled hint="L'email de connexion ne peut pas être modifié ici." />
         {error && <Notice tone="error">{error}</Notice>}

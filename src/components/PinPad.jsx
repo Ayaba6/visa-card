@@ -41,7 +41,12 @@ export default function PinPad({ onComplete, loading, error, resetKey, length = 
 
   return (
     <div className="flex flex-col items-center">
-      <div className={`flex gap-4 h-6 items-center ${error ? 'animate-shake' : ''}`} key={error || 'ok'}>
+      <div
+        className={`flex gap-4 h-6 items-center ${error ? 'animate-shake' : ''}`}
+        key={error || 'ok'}
+        role="status"
+        aria-label={`${pin.length} chiffre${pin.length > 1 ? 's' : ''} saisi${pin.length > 1 ? 's' : ''} sur ${length}`}
+      >
         {Array.from({ length }).map((_, i) => (
           <span
             key={i}

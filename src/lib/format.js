@@ -48,3 +48,9 @@ export function normalizePhone(p) {
 }
 
 export const digitsOnly = (v) => (v || '').replace(/\D/g, '');
+
+/** « 70123456 » -> « 70 12 34 56 » (affichage d'un numéro local à 8 chiffres). */
+export const formatLocalPhone = (digits) => digitsOnly(digits).replace(/(\d{2})(?=\d)/g, '$1 ');
+
+/** Les 8 derniers chiffres d'un numéro stocké en « +226XXXXXXXX ». */
+export const localPhone = (phone) => digitsOnly(phone).slice(-8);

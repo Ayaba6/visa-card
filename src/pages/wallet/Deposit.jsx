@@ -1,19 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone } from 'lucide-react';
-import { AmountChips, Button, Field, Notice } from '../../components/ui';
+import { AmountChips, Button, Notice, PhoneField } from '../../components/ui';
 import { AmountInput, FormPage, OperatorPicker, Section } from './shared';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/Overlays';
 import { api } from '../../lib/api';
-import { digitsOnly, fcfa } from '../../lib/format';
+import { fcfa, localPhone } from '../../lib/format';
 
 export default function Deposit() {
   const navigate = useNavigate();
   const toast = useToast();
   const { profile, settings, refreshProfile } = useAuth();
   const [operator, setOperator] = useState('Orange Money');
-  const [phone, setPhone] = useState(digitsOnly(profile?.phone).slice(-8));
+  const [phone, setPhone] = useState(localPhone(profile?.phone));
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,7 +20,7 @@ export default function Deposit() {
   const value = Number(amount) || 0;
   const min = settings?.min_deposit_fcfa ?? 500;
   const max = settings?.max_deposit_fcfa ?? 2000000;
-  const valid = value >= min && value <= max && digitsOnly(phone).length === 8;
+  const valid = value >= min && value <= max && phone.length === 8;
 
   const submit = async () => {
     setLoading(true);
@@ -61,14 +60,7 @@ export default function Deposit() {
       </Section>
 
       <Section>
-        <Field
-          label={`Numéro ${operator}`}
-          icon={Phone}
-          inputMode="numeric"
-          value={phone}
-          onChange={(e) => setPhone(digitsOnly(e.target.value).slice(0, 8))}
-          placeholder="70 00 00 00"
-        />
+        <PhoneField label={`Numéro ${operator}`} value={phone} onChange={setPhone} />
       </Section>
 
       <div className="mt-5 space-y-3">

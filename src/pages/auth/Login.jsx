@@ -27,6 +27,14 @@ export default function Login() {
     <AuthLayout
       title="Bon retour 👋"
       subtitle="Connectez-vous pour accéder à vos cartes."
+      topRight={
+        <span className="hidden sm:inline">
+          Pas de compte ?{' '}
+          <Link to="/register" className="font-bold text-emerald-700 hover:underline">
+            S’inscrire
+          </Link>
+        </span>
+      }
       footer={
         <>
           Pas encore de compte ?{' '}
@@ -68,7 +76,7 @@ export default function Login() {
             Mot de passe oublié ?
           </Link>
         </div>
-        <Button type="submit" loading={loading} className="w-full">
+        <Button type="submit" size="lg" loading={loading} className="w-full">
           Se connecter
         </Button>
       </form>

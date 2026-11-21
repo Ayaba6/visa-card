@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone } from 'lucide-react';
-import { Button, Field, Notice, SummaryRow } from '../../components/ui';
+import { Button, Notice, PhoneField, SummaryRow } from '../../components/ui';
 import { AmountInput, FormPage, OperatorPicker, Section } from './shared';
 import { useAuth } from '../../context/AuthContext';
 import { usePinPrompt, useToast } from '../../context/Overlays';
 import { api } from '../../lib/api';
-import { digitsOnly, fcfa } from '../../lib/format';
+import { fcfa, localPhone } from '../../lib/format';
 
 export default function Withdraw() {
   const navigate = useNavigate();
@@ -14,7 +13,7 @@ export default function Withdraw() {
   const confirmWithPin = usePinPrompt();
   const { profile, settings, refreshProfile } = useAuth();
   const [operator, setOperator] = useState('Orange Money');
-  const [phone, setPhone] = useState(digitsOnly(profile?.phone).slice(-8));
+  const [phone, setPhone] = useState(localPhone(profile?.phone));
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
 
@@ -25,7 +24,7 @@ export default function Withdraw() {
   const balance = Number(profile?.balance_fcfa || 0);
   const min = settings?.min_withdraw_fcfa ?? 1000;
   const insufficient = total > balance;
-  const valid = value >= min && !insufficient && digitsOnly(phone).length === 8;
+  const valid = value >= min && !insufficient && phone.length === 8;
 
   const setMax = () => {
     const maxAmount = Math.floor(balance / (1 + feePct / 100));
@@ -76,14 +75,7 @@ export default function Withdraw() {
       </Section>
 
       <Section>
-        <Field
-          label={`Numéro ${operator}`}
-          icon={Phone}
-          inputMode="numeric"
-          value={phone}
-          onChange={(e) => setPhone(digitsOnly(e.target.value).slice(0, 8))}
-          placeholder="70 00 00 00"
-        />
+        <PhoneField label={`Numéro ${operator}`} value={phone} onChange={setPhone} />
       </Section>
 
       {value > 0 && (

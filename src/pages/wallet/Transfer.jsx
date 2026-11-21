@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, UserCheck, UserX } from 'lucide-react';
-import { Button, Field, Notice, Spinner, SummaryRow } from '../../components/ui';
+import { Button, Field, Notice, PhoneField, Spinner, SummaryRow } from '../../components/ui';
 import { AmountInput, FormPage, Section } from './shared';
 import { useAuth } from '../../context/AuthContext';
 import { usePinPrompt, useToast } from '../../context/Overlays';
 import { api } from '../../lib/api';
-import { digitsOnly, fcfa } from '../../lib/format';
+import { fcfa } from '../../lib/format';
 
 export default function Transfer() {
   const navigate = useNavigate();
@@ -71,14 +71,12 @@ export default function Transfer() {
       }
     >
       <Section title="Destinataire">
-        <Field
+        <PhoneField
           label="Numéro Kodapay du destinataire"
-          inputMode="numeric"
           autoFocus
+          autoComplete="off"
           value={phone}
-          onChange={(e) => setPhone(digitsOnly(e.target.value).slice(0, 8))}
-          placeholder="70 00 00 00"
-          icon={() => <span className="text-sm font-semibold text-slate-500">+226</span>}
+          onChange={setPhone}
           right={looking ? <Spinner className="w-4 h-4" /> : null}
         />
         {recipient && (

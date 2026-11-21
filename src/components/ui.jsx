@@ -1,5 +1,7 @@
+import { useId } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { digitsOnly, formatLocalPhone } from '../lib/format';
 
 export function Spinner({ className = 'w-6 h-6' }) {
   return <Loader2 className={`animate-spin text-emerald-600 ${className}`} />;
@@ -14,7 +16,7 @@ export function FullScreenLoader() {
 }
 
 const VARIANTS = {
-  primary: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/25',
+  primary: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-900/10',
   dark: 'bg-slate-900 text-white hover:bg-slate-800',
   soft: 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
   outline: 'border border-slate-200 bg-white text-slate-800 hover:bg-slate-50',
@@ -22,42 +24,91 @@ const VARIANTS = {
   ghost: 'text-emerald-700 hover:bg-emerald-50',
 };
 
-export function Button({ variant = 'primary', loading, className = '', children, disabled, ...props }) {
+const SIZES = {
+  sm: 'h-9 px-3.5 text-[13px] rounded-xl',
+  md: 'h-12 px-5 text-sm rounded-2xl',
+  lg: 'h-[52px] px-6 text-[15px] rounded-2xl',
+};
+
+/** Bouton de l'app. `loading` affiche un indicateur et bloque les clics. */
+export function Button({ variant = 'primary', size = 'md', loading, className = '', children, disabled, type = 'button', ...props }) {
   return (
     <button
+      type={type}
       disabled={disabled || loading}
-      className={`h-12 px-5 rounded-2xl font-semibold text-sm inline-flex items-center justify-center gap-2 transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none ${VARIANTS[variant]} ${className}`}
+      aria-busy={loading || undefined}
+      className={`inline-flex items-center justify-center gap-2 font-semibold transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200 disabled:opacity-50 disabled:pointer-events-none ${SIZES[size]} ${VARIANTS[variant]} ${className}`}
       {...props}
     >
-      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : children}
+      {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-label="Chargement" /> : children}
     </button>
   );
 }
 
-export function Field({ label, hint, error, icon: Icon, right, className = '', ...props }) {
+/**
+ * Champ de saisie avec libellé, aide et message d'erreur reliés pour les lecteurs d'écran.
+ * `icon` : composant d'icône Lucide · `prefix` : élément affiché avant la saisie (ex. indicatif).
+ */
+export function Field({ label, hint, error, icon: Icon, prefix, right, className = '', id: idProp, ...props }) {
+  const autoId = useId();
+  const id = idProp || autoId;
+  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+
   return (
-    <label className={`block ${className}`}>
-      {label && <span className="block text-xs font-semibold text-slate-600 mb-1.5">{label}</span>}
-      <span
-        className={`flex items-center gap-2 h-12 px-3.5 rounded-2xl bg-white border transition focus-within:ring-4 ${
+    <div className={className}>
+      {label && (
+        <label htmlFor={id} className="block text-[13px] font-semibold text-slate-700 mb-1.5">
+          {label}
+        </label>
+      )}
+      <div
+        className={`flex items-center gap-2.5 h-[52px] px-4 rounded-2xl bg-white border transition-[border-color,box-shadow] focus-within:ring-4 ${
           error
-            ? 'border-rose-300 focus-within:ring-rose-100'
-            : 'border-slate-200 focus-within:border-emerald-500 focus-within:ring-emerald-100'
-        }`}
+            ? 'border-rose-300 focus-within:border-rose-400 focus-within:ring-rose-100'
+            : 'border-slate-200 hover:border-slate-300 focus-within:border-emerald-500 focus-within:ring-emerald-100'
+        } ${props.disabled ? 'bg-slate-50 opacity-70' : ''}`}
       >
-        {Icon && <Icon className="text-slate-400 shrink-0" size={18} />}
+        {Icon && <Icon className="text-slate-400 shrink-0" size={18} aria-hidden="true" />}
+        {prefix}
         <input
-          className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-slate-900 placeholder:text-slate-300"
+          id={id}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-slate-900 placeholder:text-slate-300 disabled:cursor-not-allowed"
           {...props}
         />
         {right}
-      </span>
+      </div>
       {error ? (
-        <span className="block text-xs text-rose-600 mt-1.5">{error}</span>
+        <p id={`${id}-error`} role="alert" className="flex items-center gap-1.5 text-xs font-medium text-rose-600 mt-1.5">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+          {error}
+        </p>
       ) : hint ? (
-        <span className="block text-xs text-slate-400 mt-1.5">{hint}</span>
+        <p id={`${id}-hint`} className="text-xs text-slate-400 mt-1.5">
+          {hint}
+        </p>
       ) : null}
-    </label>
+    </div>
+  );
+}
+
+/** Champ de numéro burkinabè : indicatif +226 fixe, 8 chiffres formatés « 70 12 34 56 ». */
+export function PhoneField({ value, onChange, ...props }) {
+  return (
+    <Field
+      inputMode="numeric"
+      autoComplete="tel-national"
+      placeholder="70 00 00 00"
+      {...props}
+      value={formatLocalPhone(value)}
+      onChange={(e) => onChange(digitsOnly(e.target.value).slice(0, 8))}
+      prefix={
+        <span className="flex items-center gap-1.5 pr-2.5 border-r border-slate-200 text-sm font-semibold text-slate-700 select-none">
+          <span aria-hidden="true">🇧🇫</span> +226
+        </span>
+      }
+    />
   );
 }
 
