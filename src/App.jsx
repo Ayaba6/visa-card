@@ -1,135 +1,153 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './supabaseClient';
-import { Loader2 } from 'lucide-react';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { PinPromptProvider, ToastProvider } from './context/Overlays';
+import AppShell from './components/AppShell';
+import ErrorBoundary from './components/ErrorBoundary';
+import { FullScreenLoader } from './components/ui';
+import { isConfigured } from './lib/supabase';
+import { useOnline } from './lib/pwa';
+import { WifiOff } from 'lucide-react';
 
-// Pages d'Authentification
-import WelcomeScreen from './pages/WelcomeScreen';
-import LoginScreen from './pages/LoginScreen';
-import RegisterScreen from './pages/RegisterScreen';
-import PinScreen from './pages/PinScreen';
+// Écrans d'entrée : chargés immédiatement (premier affichage le plus rapide possible)
+import Welcome from './pages/auth/Welcome';
+import Login from './pages/auth/Login';
+import Lock from './pages/auth/Lock';
+import SetupError from './pages/auth/SetupError';
 
-// Pages Principales
-import Dashboard from './pages/Dashboard';
-import CardsScreen from './pages/CardsScreen';
-import CardDetailScreen from './pages/CardDetailScreen';
-import CreateCardScreen from './pages/CreateCardScreen';
-import NotificationsScreen from './pages/NotificationsScreen';
-import SettingsScreen from './pages/SettingsScreen';
+// Tous les autres écrans : chargés à la demande, chacun dans son propre fichier
+const Landing = lazy(() => import('./pages/Landing'));
+const Register = lazy(() => import('./pages/auth/Register'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
+const SetupPin = lazy(() => import('./pages/auth/SetupPin'));
+const Home = lazy(() => import('./pages/Home'));
+const Cards = lazy(() => import('./pages/cards/Cards'));
+const CreateCard = lazy(() => import('./pages/cards/CreateCard'));
+const CardDetail = lazy(() => import('./pages/cards/CardDetail'));
+const Deposit = lazy(() => import('./pages/wallet/Deposit'));
+const Withdraw = lazy(() => import('./pages/wallet/Withdraw'));
+const Transfer = lazy(() => import('./pages/wallet/Transfer'));
+const Transactions = lazy(() => import('./pages/Transactions'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Settings = lazy(() => import('./pages/account/Settings'));
+const Profile = lazy(() => import('./pages/account/Profile'));
+const ChangePin = lazy(() => import('./pages/account/ChangePin'));
 
-export default function App() {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
+function AppRoutes() {
+  const { session, profile, profileError, loading, recovery, unlocked } = useAuth();
 
-  useEffect(() => {
-    // 1. Récupérer la session Supabase active au démarrage
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
+  if (!isConfigured) {
+    return <SetupError message="Les clés Supabase sont absentes du fichier .env.local." />;
+  }
+  if (loading) return <FullScreenLoader />;
 
-    // 2. Écouter les changements d'état (Connexion, Déconnexion, Session expirée)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-  };
-
-  // Écran de chargement pendant la vérification initiale
-  if (loading) {
+  if (!session) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      <Routes>
+        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="*" element={<Navigate to="/welcome" replace />} />
+      </Routes>
+    );
+  }
+
+  if (recovery) return <ResetPassword />;
+  if (!profile) return <SetupError message={profileError} />;
+  if (!profile.has_pin) return <SetupPin />;
+  if (!unlocked) return <Lock />;
+
+  return (
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route index element={<Home />} />
+        <Route path="/cards" element={<Cards />} />
+        <Route path="/transactions" element={<Transactions />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
+      <Route path="/cards/new" element={<CreateCard />} />
+      <Route path="/cards/:id" element={<CardDetail />} />
+      <Route path="/deposit" element={<Deposit />} />
+      <Route path="/withdraw" element={<Withdraw />} />
+      <Route path="/transfer" element={<Transfer />} />
+      <Route path="/notifications" element={<Notifications />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/security/pin" element={<ChangePin />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+const DESKTOP_QUERY = '(min-width: 1024px)';
+
+function useIsDesktop() {
+  const [desktop, setDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_QUERY);
+    const onChange = (e) => setDesktop(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return desktop;
+}
+
+function Root() {
+  const { session, loading } = useAuth();
+  const isDesktop = useIsDesktop();
+  const online = useOnline();
+
+  // Visiteur non connecté sur ordinateur : présentation et formulaires en pleine largeur
+  if (isConfigured && !loading && !session && isDesktop) {
+    return (
+      <div className="relative h-[100dvh] flex flex-col">
+        <ToastProvider>
+          <Suspense fallback={<FullScreenLoader />}>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/welcome" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </ToastProvider>
       </div>
     );
   }
 
-  const isAuthenticated = !!session;
-
   return (
-    <Router>
-      <div className="min-h-screen bg-slate-900 text-slate-800 font-sans flex justify-center items-center p-0 md:p-4">
-        <div className="w-full max-w-md bg-white min-h-screen md:min-h-[844px] md:max-h-[844px] md:rounded-[40px] shadow-2xl overflow-hidden flex flex-col relative border border-slate-800">
-          <Routes>
-            {/* Redirection initiale */}
-            <Route 
-              path="/" 
-              element={<Navigate to={isAuthenticated ? "/dashboard" : "/welcome"} replace />} 
-            />
-
-            {/* Écran de bienvenue */}
-            <Route 
-              path="/welcome" 
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <WelcomeScreen />
-              } 
-            />
-
-            {/* Connexion classique */}
-            <Route 
-              path="/login" 
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginScreen />
-              } 
-            />
-
-            {/* Inscription */}
-            <Route 
-              path="/register" 
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterScreen />
-              } 
-            />
-
-            {/* Connexion rapide par PIN */}
-            <Route 
-              path="/pin" 
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <PinScreen />
-              } 
-            />
-
-            {/* Routes Protégées */}
-            <Route 
-              path="/dashboard" 
-              element={isAuthenticated ? <Dashboard onLogout={handleLogout} /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/cards" 
-              element={isAuthenticated ? <CardsScreen /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/create-card" 
-              element={isAuthenticated ? <CreateCardScreen /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/card-detail" 
-              element={isAuthenticated ? <CardDetailScreen /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/notifications" 
-              element={isAuthenticated ? <NotificationsScreen /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/settings" 
-              element={isAuthenticated ? <SettingsScreen onLogout={handleLogout} /> : <Navigate to="/login" replace />} 
-            />
-
-            {/* Redirection par défaut */}
-            <Route 
-              path="*" 
-              element={<Navigate to={isAuthenticated ? "/dashboard" : "/welcome"} replace />} 
-            />
-          </Routes>
-        </div>
+    <div className="h-[100dvh] w-full flex justify-center md:items-center md:bg-gradient-to-br md:from-slate-200 md:to-emerald-100">
+      {/* Cadre « téléphone » : plein écran sur mobile, centré sur ordinateur */}
+      <div className="relative w-full max-w-[430px] h-full md:h-[min(880px,94dvh)] bg-slate-50 flex flex-col overflow-hidden md:rounded-[40px] md:shadow-2xl md:ring-8 md:ring-slate-900">
+        {!online && (
+          <div role="status" className="shrink-0 flex items-center justify-center gap-2 bg-slate-900 text-white text-xs font-medium py-2 px-4">
+            <WifiOff className="w-3.5 h-3.5" aria-hidden="true" />
+            Vous êtes hors ligne. Les soldes et opérations se mettront à jour au retour de la connexion.
+          </div>
+        )}
+        <ToastProvider>
+          <PinPromptProvider>
+            <Suspense fallback={<FullScreenLoader />}>
+              <AppRoutes />
+            </Suspense>
+          </PinPromptProvider>
+        </ToastProvider>
       </div>
-    </Router>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <Root />
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

@@ -1,12 +1,47 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Kodapay — Cartes Visa virtuelles rechargées par Mobile Money</title>
+    <meta
+      name="description"
+      content="Créez une carte Visa ou Mastercard virtuelle en dollars, rechargeable avec Orange Money, Moov Money ou Wave. Payez en ligne partout."
+    />
+
+    <!-- Icônes -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Application installable (PWA) -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#022c22" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Kodapay" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Aperçu lors d'un partage (WhatsApp, Facebook…) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Kodapay" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content="Kodapay — Votre carte Visa virtuelle" />
+    <meta property="og:description" content="Payez en ligne partout, avec votre Mobile Money." />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+
+    <!-- Police -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
+    <noscript>Kodapay a besoin de JavaScript pour fonctionner.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Kodapay</title>
+  <defs>
+    <linearGradient id="kp-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="0.55" stop-color="#059669"/>
+      <stop offset="1" stop-color="#064e3b"/>
+    </linearGradient>
+    <linearGradient id="kp-coin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fef3c7"/>
+      <stop offset="1" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+  <!-- Fond plein (pas d'arrondi) : le système découpe lui-même la forme de l'icône -->
+  <rect width="512" height="512" fill="url(#kp-bg)"/>
+  <!-- Symbole réduit à 70 % pour rester dans la zone de sécurité des icônes adaptatives -->
+  <g transform="translate(76.8 76.8) scale(0.7)">
+    <g fill="none" stroke="#ffffff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M168 132V380"/>
+      <path d="M206 262L340 380"/>
+      <path d="M206 236L292 172"/>
+    </g>
+    <circle cx="348" cy="146" r="42" fill="url(#kp-coin)"/>
+  </g>
+</svg>
